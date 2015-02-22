@@ -1,3 +1,18 @@
+# Copyright (c) 2015 Hewlett-Packard Development Company, L.P.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import time
 
@@ -5,6 +20,7 @@ import gear
 import testtools
 
 from gearhorn import streamer
+
 
 class TestSequenceStream(testtools.TestCase):
 
@@ -15,10 +31,12 @@ class TestSequenceStream(testtools.TestCase):
         self.assertRaises(IndexError, stream.get_sequence, 0)
         stream.append('a thing')
         self.assertTrue(stream.has_sequence(0))
-        self.assertEquals({'sequence': 0,
-         'payload': 'a thing'}, stream.get_sequence(0))
+        self.assertEqual(
+            {'sequence': 0,
+             'payload': 'a thing'}, stream.get_sequence(0))
         stream.trim(0)
         self.assertFalse(stream.has_sequence(0))
+
 
 class TestStreamer(testtools.TestCase):
 
@@ -63,5 +81,7 @@ class TestStreamer(testtools.TestCase):
             time.sleep(0.1)
 
         self.assertTrue(broadcasts_0.complete)
-        self.assertEqual({'sequence': 0,
-         'payload': 'in payload'}, json.loads(''.join(broadcasts_0.data)))
+        self.assertEqual(
+            {'sequence': 0,
+             'payload': 'in payload'},
+            json.loads(''.join(broadcasts_0.data)))
