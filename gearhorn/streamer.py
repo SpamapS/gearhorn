@@ -1,3 +1,5 @@
+import json
+
 class SequenceStream(object):
     def __init__(self, start_seq=-1):
         self._seq = start_seq
@@ -30,7 +32,7 @@ class Streamer(object):
         self.pending_jobs = list()
 
     def in_event(self, job):
-        self.stream.append(job.payload)
+        self.stream.append(job.arguments)
         job.sendWorkComplete()
 
     def flush_pending_jobs(self):
@@ -39,13 +41,13 @@ class Streamer(object):
         for pjob in pjobs:
             self.broadcast_event(pjob)
 
-    def broadcast_event(job):
+    def broadcast_event(self, job):
         seq = job.unique
         try:
             seq = int(seq)
         except TypeError as e:
             job.sendWorkException(str(e))
         if self.stream.has_sequence(seq):
-            job.sendWorkData(self.stream.get_sequence(seq))
+            job.sendWorkComplete(json.dumps(self.stream.get_sequence(seq)))
             return
         self.pending_jobs.append(job)
