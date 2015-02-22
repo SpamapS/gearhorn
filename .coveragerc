@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = gearhorn
+omit = gearhorn/tests/*,gearhorn/openstack/*
+
+[report]
+ignore-errors = True
