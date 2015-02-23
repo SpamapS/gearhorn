@@ -54,12 +54,12 @@ class TestStreamer(testtools.TestCase):
         self.worker.waitForServer()
 
     def test_streamer(self):
-        self.worker.registerFunction('in')
-        self.worker.registerFunction('send_broadcasts')
-        job = gear.Job('in', 'in payload')
+        self.worker.registerFunction(b'in')
+        self.worker.registerFunction(b'send_broadcasts')
+        job = gear.Job(b'in', b'in payload')
         self.client.submitJob(job)
         workerJob = self.worker.getJob()
-        self.assertEqual('in', workerJob.name)
+        self.assertEqual(b'in', workerJob.name)
         seq = streamer.SequenceStream()
         stream = streamer.Streamer(seq)
         stream.in_event(workerJob)
@@ -70,12 +70,12 @@ class TestStreamer(testtools.TestCase):
         self.assertTrue(stream.stream.has_sequence(0))
         broadcast_listener = gear.Client()
         self.addCleanup(broadcast_listener.shutdown)
-        broadcast_listener.addServer('localhost')
+        broadcast_listener.addServer(b'localhost')
         broadcast_listener.waitForServer()
-        broadcasts_0 = gear.Job('send_broadcasts', '', '0')
+        broadcasts_0 = gear.Job(b'send_broadcasts', b'', b'0')
         broadcast_listener.submitJob(broadcasts_0)
         workerJob = self.worker.getJob()
-        self.assertEqual('send_broadcasts', workerJob.name)
+        self.assertEqual(b'send_broadcasts', workerJob.name)
         stream.broadcast_event(workerJob)
         while not broadcasts_0.complete:
             time.sleep(0.1)
@@ -84,4 +84,4 @@ class TestStreamer(testtools.TestCase):
         self.assertEqual(
             {'sequence': 0,
              'payload': 'in payload'},
-            json.loads(''.join(broadcasts_0.data)))
+            json.loads(b''.join(broadcasts_0.data).decode('utf-8')))

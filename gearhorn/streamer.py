@@ -32,6 +32,9 @@ class SequenceStream(object):
     def get_sequence(self, seq):
         list_pos = self._seq - seq
         val = self._stream[list_pos]
+        # XXX: I'm not sure this is an appropriate simplification. -Clint
+        if isinstance(val, bytes):
+            val = val.decode('utf-8')
         return {"sequence": seq, "payload": val}
 
     def del_sequence(self, seq):
@@ -65,6 +68,6 @@ class Streamer(object):
         except TypeError as e:
             job.sendWorkException(str(e))
         if self.stream.has_sequence(seq):
-            job.sendWorkComplete(json.dumps(self.stream.get_sequence(seq)))
+            job.sendWorkComplete(json.dumps(self.stream.get_sequence(seq)).encode('utf-8'))
             return
         self.pending_jobs.append(job)
