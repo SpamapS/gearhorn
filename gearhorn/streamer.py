@@ -68,6 +68,7 @@ class Streamer(object):
         except TypeError as e:
             job.sendWorkException(str(e))
         if self.stream.has_sequence(seq):
-            job.sendWorkComplete(json.dumps(self.stream.get_sequence(seq)).encode('utf-8'))
+            job.sendWorkComplete(
+                json.dumps(self.stream.get_sequence(seq)).encode('utf-8'))
             return
         self.pending_jobs.append(job)
