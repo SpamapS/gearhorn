@@ -16,7 +16,7 @@ that is the last seen sequence ID. When this daemon receives that work,
 it looks for any items with sequence number greater than this ID, and
 if it finds them, reply with a json payload of::
 
-    {"new_seq": 2,
+    {"sequence": 2,
      "payload": "foobarbaz"}
 
 Clients would consume this, and then submit a new job with the
