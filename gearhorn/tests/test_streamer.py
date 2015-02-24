@@ -35,6 +35,9 @@ class TestSequenceStream(testtools.TestCase):
         self.assertEqual(
             {'sequence': 0,
              'payload': 'a thing'}, stream.get_sequence(0))
+        self.assertEqual(
+            [{'sequence': 0,
+             'payload': 'a thing'}], list(stream.since_sequence(-1)))
         stream.trim(0)
         self.assertFalse(stream.has_sequence(0))
 

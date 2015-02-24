@@ -37,6 +37,10 @@ class SequenceStream(object):
             val = val.decode('utf-8')
         return {"sequence": seq, "payload": val}
 
+    def since_sequence(self, seq):
+        for seq in range(seq, self._seq):
+            yield self.get_sequence(seq+1)
+
     def del_sequence(self, seq):
         list_pos = self._seq - seq
         del self._stream[list_pos]
