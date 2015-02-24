@@ -20,6 +20,7 @@ import gear
 import testtools
 
 from gearhorn import streamer
+from gearhorn.tests import server
 
 
 class TestSequenceStream(testtools.TestCase):
@@ -42,14 +43,14 @@ class TestStreamer(testtools.TestCase):
 
     def setUp(self):
         super(TestStreamer, self).setUp()
-        self.server = gear.Server()
+        self.server = server.TestServer()
         self.addCleanup(self.server.shutdown)
         self.worker = gear.Worker('worker')
         self.addCleanup(self.worker.shutdown)
         self.client = gear.Client('in_client')
         self.addCleanup(self.client.shutdown)
-        self.worker.addServer('localhost')
-        self.client.addServer('localhost')
+        self.worker.addServer('localhost', self.server.port)
+        self.client.addServer('localhost', self.server.port)
         self.client.waitForServer()
         self.worker.waitForServer()
 
@@ -70,7 +71,7 @@ class TestStreamer(testtools.TestCase):
         self.assertTrue(stream.stream.has_sequence(0))
         broadcast_listener = gear.Client()
         self.addCleanup(broadcast_listener.shutdown)
-        broadcast_listener.addServer(b'localhost')
+        broadcast_listener.addServer('localhost', self.server.port)
         broadcast_listener.waitForServer()
         broadcasts_0 = gear.Job(b'send_broadcasts', b'', b'0')
         broadcast_listener.submitJob(broadcasts_0)
