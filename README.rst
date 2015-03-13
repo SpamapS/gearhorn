@@ -10,6 +10,61 @@ A gearman worker which enables efficient broadcast communication
 * Source: http://git.openstack.org/cgit/openstack-infra/gearhorn
 * Bugs: http://bugs.launchpad.net/gearhorn
 
+=============
+Fanout Worker
+=============
+
+Gearman has no in-built way to copy jobs to multiple workers. This worker
+will do that to support the common messaging pattern known as "Fanout"
+
+Once running, the fanout worker will subscribe to the queues
+"register_fanout_subscriber" and "fanout".
+
+register_fanout_subscriber
+--------------------------
+
+This queue will have a JSON payload consisting of a mapping with two
+keys: topic, subscriber_id. The subscriber_id will be kept as a set
+under the topic for use in sending messages to the appropriate subscriber
+queue. It should be unique for every intended recipient queue for every
+fanout request. Usually this will be unique per host.
+
+fanout
+------
+
+This queue will have a JSON payload consisting of a mapping with two keys:
+topic, payload. The topic will be used to search for a list of subscriber
+ids. For each subscriber_id found, a copy of the payload will be sent
+to the queue named  topic_subscriber_id. So if we had two subscribers to
+"officememos" with ids "bob" and "alice", then a message to fanout with
+this payload::
+
+    {"topic": "officememos",
+     "payload": "please go home early today."}
+
+Would result in the worker sending a copy of the payload to the queues
+"officememos_bob" and "officememos_alice".
+
+Matchmaking
+~~~~~~~~~~~
+
+In order to match up topics with subscribers workers must share a list
+of subscribers for each topic. The mapping is maintained in a backend
+data store. Any time new registration events are seen the list is updated
+in that store and a message is sent to the __matchmaking topic. Workers
+automatically add and remove themselves to/from the __matchmaking list
+in order to ensure they're informed and able to clear cache whenever
+the canonical list is updated. Workers that fail violently must be
+manually removed.
+
+===========
+Failed Idea
+===========
+
+The following was idea #1, and fails to be any more efficient than just
+runnint Redis as a pub/sub and direct comm backend. It remains here as
+a reminder not to reimplement Redis.
+
 The expected way to use it is to have a gearman client that wants to
 receive broadcasts request the given broadcast function with a unique ID
 that is the last seen sequence ID. When this daemon receives that work,
