@@ -43,3 +43,20 @@ class TestGearhornWorker(testtools.TestCase):
         while not job.complete:
             time.sleep(0.1)
         self.assertTrue(w.stream.stream.has_sequence(0))
+
+    def test_worker_broadcast(self):
+        w = worker.GearhornWorker()
+        self.addCleanup(w.shutdown)
+        w.addServer('localhost', self.server.port)
+        for i in range(1, 3):
+            job = gear.Job(w.in_name, b'catchup payload')
+            self.client.submitJob(job)
+            w.work()
+            while not job.complete:
+                time.sleep(0.1)
+        c = gear.Client('broadcast_client')
+        self.addCleanup(self.client.shutdown)
+        self.client.addServer('localhost', self.server.port)
+        self.client.submitJob(
+
+

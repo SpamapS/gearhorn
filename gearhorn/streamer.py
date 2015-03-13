@@ -51,6 +51,7 @@ class SequenceStream(object):
 
 
 class Streamer(object):
+    '''Holds events that facilitate streaming known sequences of events.'''
     def __init__(self, stream):
         self.stream = stream
         self.pending_jobs = list()
@@ -76,3 +77,12 @@ class Streamer(object):
                 json.dumps(self.stream.get_sequence(seq)).encode('utf-8'))
             return
         self.pending_jobs.append(job)
+
+    def catchup_event(self, job):
+        seq = job.unique
+        try:
+            seq = int(seq)
+        except TypeError as e:
+            job.sendWorkException(str(e))
+        job.sendWorkComplete(
+            json.dumps(list(self.stream.since_sequence(seq))).encode('utf-8'))
