@@ -42,6 +42,11 @@ this payload::
     {"topic": "officememos",
      "payload": "please go home early today."}
 
+Optionally one can add a 'unique' key to make use of Gearman's
+unique/coalescing features. Also the 'background' key can be used to
+set a truthy value, which will tell gearhorn not to wait for receivers
+before moving on to more messages.
+
 Would result in the worker sending a copy of the payload to the queues
 "officememos_bob" and "officememos_alice".
 
