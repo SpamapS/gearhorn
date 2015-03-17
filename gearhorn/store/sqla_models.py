@@ -21,5 +21,5 @@ Base = declarative.declarative_base()
 class Subscriber(Base):
     __tablename__ = "subscriber"
 
-    funcname = sa.Column(sa.Binary(255), primary_key=True)
+    topic = sa.Column(sa.Binary(255), primary_key=True)
     client_id = sa.Column(sa.Binary(255), primary_key=True, index=True)

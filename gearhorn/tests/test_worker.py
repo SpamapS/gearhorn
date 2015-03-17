@@ -13,17 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random
+import json
 import time
 
 import gear
-import testtools
 
+from gearhorn.tests import base
 from gearhorn.tests import server
 from gearhorn import worker
 
 
-class TestGearhornWorker(testtools.TestCase):
+class TestGearhornWorker(base.TestCase):
     def setUp(self):
         super(TestGearhornWorker, self).setUp()
         self.server = server.TestServer()
@@ -34,29 +34,36 @@ class TestGearhornWorker(testtools.TestCase):
         self.client.waitForServer()
 
     def test_worker(self):
-        w = worker.GearhornWorker()
-        job = gear.Job(w.in_name, b'in payload')
-        self.client.submitJob(job)
+        w = worker.GearhornWorker(client_id='test_worker', dsn='sqlite://')
+        w._store.initialize_schema()
         self.addCleanup(w.shutdown)
         w.addServer('localhost', self.server.port)
+        w.registerSubscriberFunctions()
+        w.registerFanoutFunction()
+        subw = gear.Worker('test_worker_subw')
+        subw.addServer('localhost', self.server.port)
+        subw.waitForServer()
+        subw.registerFunction('broadcasts_test_receiver')
+        subscribe_message = {'client_id': 'test_receiver',
+                             'topic': 'broadcasts'}
+        subscribe_job = gear.Job(w.subscribe_name,
+                                 arguments=json.dumps(
+                                     subscribe_message).encode('utf-8'))
+        self.client.submitJob(subscribe_job)
+        # w should have this message only
+        w.work()
+        while not subscribe_job.complete:
+            time.sleep(0.1)
+        fanout_message = {'topic': 'broadcasts',
+                          'payload': 'in payload'}
+        job = gear.Job(w.fanout_name,
+                       json.dumps(fanout_message).encode('utf-8'))
+        self.client.submitJob(job)
+        # Now we should fanout message
         w.work()
         while not job.complete:
             time.sleep(0.1)
-        self.assertTrue(w.stream.stream.has_sequence(0))
-
-    def test_worker_broadcast(self):
-        w = worker.GearhornWorker()
-        self.addCleanup(w.shutdown)
-        w.addServer('localhost', self.server.port)
-        for i in range(1, 3):
-            job = gear.Job(w.in_name, b'catchup payload')
-            self.client.submitJob(job)
-            w.work()
-            while not job.complete:
-                time.sleep(0.1)
-        c = gear.Client('broadcast_client')
-        self.addCleanup(self.client.shutdown)
-        self.client.addServer('localhost', self.server.port)
-        self.client.submitJob(
-
-
+        # And finally subw should have it
+        import pdb; pdb.set_trace()
+        broadcasted = subw.getJob()
+        self.assertEqual('in payload', broadcasted.arguments)

@@ -17,17 +17,18 @@ import time
 
 import gear
 
-from gearstore.store import sqla
+from gearhorn.store import sqla
 
 
 class GearhornWorker(gear.Worker):
     subscribe_name = 'subscribe_fanout'
-    subscribe_name = 'unsubscribe_fanout'
+    unsubscribe_name = 'unsubscribe_fanout'
     fanout_name = 'fanout'
     foreground_timeout = 30
 
     def __init__(self, client_id=None, worker_id=None, dsn=None):
-        super(GearhornWorker, self).__init__(self.client_id, self.worker_id)
+        super(GearhornWorker, self).__init__(client_id=client_id,
+                                             worker_id=worker_id)
         client_client_id = (client_id or worker_id) + '_broadcaster'
         self._servers = []
         self.client = gear.Client(client_id=client_client_id)
@@ -56,42 +57,43 @@ class GearhornWorker(gear.Worker):
             return self.unsubscribe(job)
         raise RuntimeError('Unknown job %s' % job.name)
 
-    def subscribe(job):
-        self.subunsub(job, self._store.subscribe)
+    def subscribe(self, job):
+        self._subunsub(job, self._store.subscribe)
 
-    def unsubscribe(job):
-        self.subunsub(job, self._store.unsubscribe)
+    def unsubscribe(self, job):
+        self._subunsub(job, self._store.unsubscribe)
 
-    def _subunsub(job, action):
+    def _subunsub(self, job, action):
         try:
             message = json.loads(job.arguments)
             if not isinstance(message, dict):
                 raise ValueError('must be a mapping')
-            if ('topic', 'client_id') not in message:
+            if 'topic' not in message or 'client_id' not in message:
                 raise ValueError('must have topic and client_id keys')
         except ValueError as e:
             job.sendWorkException(bytes(str(e).encode('utf-8')))
             return
         try:
             action(client_id=message['client_id'],
-                                  topic=message['topic'])
+                   topic=message['topic'])
         except Exception as e:
             job.sendWorkException(bytes(str(e).encode('utf-8')))
             return
         job.sendWorkComplete()
 
-    def fanout(job):
+    def fanout(self, job):
         try:
             message = json.loads(job.arguments)
             if not isinstance(message, dict):
                 raise ValueError('must be a JSON mapping.')
-            if ('topic', 'payload') not in message:
+            if 'topic' not in message or 'payload' not in message:
                 raise ValueError('must have topic and payload keys')
         except ValueError as e:
             job.sendWorkException(bytes(str(e).encode('utf-8')))
             return
         wait_jobs = []
-        for sub in self._store.get_subscribers(messagej['topic']):
+        errors = []
+        for sub in self._store.get_subscribers(message['topic']):
             name = '%s_%s' % (message['topic'], sub)
             cj = gear.Job(name, arguments=message['payload'],
                           unique=message.get('unique'))
@@ -100,7 +102,7 @@ class GearhornWorker(gear.Worker):
                                                                  False))
                 if not message.get('background'):
                     wait_jobs.append((sub, cj))
-            except GearmanError as e:
+            except gear.GearmanError as e:
                 errors.append((sub, str(e)))
         done = 0
         # Timeout just in case
@@ -124,5 +126,5 @@ class GearhornWorker(gear.Worker):
         if errors:
             job.sendWorkException(json.dumps(errors))
         else:
-            job.sendWorkComplete(done)
+            job.sendWorkComplete(bytes('%d' % done).encode('utf-8'))
         return True
