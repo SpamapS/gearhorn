@@ -20,14 +20,14 @@ will do that to support the common messaging pattern known as "Fanout"
 Once running, the fanout worker will subscribe to the queues
 "register_fanout_subscriber" and "fanout".
 
-register_fanout_subscriber
---------------------------
+subscribe_fanout unsubscribe_fanout
+-----------------------------------
 
-This queue will have a JSON payload consisting of a mapping with two
-keys: topic, subscriber_id. The subscriber_id will be kept as a set
-under the topic for use in sending messages to the appropriate subscriber
-queue. It should be unique for every intended recipient queue for every
-fanout request. Usually this will be unique per host.
+These queues will have a JSON payload consisting of a mapping with two
+keys: topic, client_id. The client_id will be kept as a set under the
+topic for use in sending messages to the appropriate subscriber queue. It
+should be unique for every intended recipient queue for every fanout
+request. Usually this will be unique per host.
 
 fanout
 ------

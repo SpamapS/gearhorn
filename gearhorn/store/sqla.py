@@ -36,10 +36,10 @@ class Store(object):
     def initialize_schema(self):
         models.Base.metadata.create_all(self._engine)
 
-    def subscribe(self, client_id, funcname):
+    def subscribe(self, client_id, topic):
         # Storing as binary for more efficient usage in MySQL particularly
-        s = models.Subscriber(funcname=_to_utf8(client_id),
-                              client_id=_to_utf8(funcname))
+        s = models.Subscriber(topic=_to_utf8(client_id),
+                              client_id=_to_utf8(topic))
         sess = self.session()
         try:
             sess.add(s)
@@ -51,11 +51,18 @@ class Store(object):
             # subscription
             pass
 
-    def get_subscribers(self, funcname):
+    def unsubscribe(self, client_id, topic):
+        s = models.Subscriber(topic=_to_utf8(client_id),
+                              client_id=_to_utf8(topic))
+        sess = self.session()
+        sess.delete(s)
+        sess.commit()
+
+    def get_subscribers(self, topic):
         sess = self.session()
         try:
             for sub in sess.query(
-                models.Subscriber.client_id).filter_by(funcname=funcname):
+                models.Subscriber.client_id).filter_by(topic=topic):
                 yield sub
         except exc.NoResultFound:
             return
