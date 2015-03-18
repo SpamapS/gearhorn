@@ -16,41 +16,16 @@ import json
 
 import gear
 
-
-class GearhornClientJob(gear.Job):
-    _as_dict = None
-    def as_dict(self):
-        if not self.complete:
-            return None
-        if self._as_dict is None:
-            self._as_dict = json.loads(b''.join(self.data).decode('utf-8'))
-        return self._as_dict
+from gearhorn import worker
 
 
 class GearhornClient(gear.Client):
     '''An example of a client object to use to subscribe to Gearhorn
     broadcasts.'''
 
-    last_sequence = -1
-    broadcast_queue_name = b'broadcast'
-    current_job = None
-
     def submitJob(self, job):
-        self.current_job = job
+        real_name = job.name
+        real_arguments = {'topic': real_name, 'payload': job.arguments}
+        job.name = worker.GearhornWorker.fanout_name
+        job.arguments = bytes(json.dumps(real_arguments).encode('utf-8'))
         return super(GearhornClient, self).submitJob(job)
-
-    def handleWorkComplete(self):
-        payload = self.current_job.as_dict()
-        self.last_sequence = payload['sequence']
-        self.submitNext()
-        self.handlePayload(payload)
-
-    def submitNext(self):
-        '''Call this to submit the next job.'''
-        new_job = GearhornClientJob(self.broadcast_queue_name, b'', b'%d' %
-                                    self.last_sequence)
-        self.submitJob(new_job)
-
-    def handlePayload(self, payload):
-        '''Override this to do something with the notification.'''
-        return
