@@ -14,18 +14,20 @@
 # limitations under the License.
 
 import argparse
-import sys
+import socket
 
 from gearhorn import worker
 
-def main(argv=None):
-    if argv is None:
-        argv = sys.argv
+
+def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host', '-H', default=['localhost'],
+    parser.add_argument('host', default=['localhost'],
                         help='Gearman server(s)', nargs='*')
-    opts = parser.parse_args(argv[1:])
-    w = worker.GearhornWorker()
+    parser.add_argument('--sqlalchemy-dsn', help='SQLAlchemy DSN for storing'
+                        ' matchmaking data')
+    opts = parser.parse_args()
+    w = worker.GearhornWorker(client_id='gearhorn_%s' % socket.gethostname(),
+                              dsn=opts.sqlalchemy_dsn)
     for host in opts.host:
         w.addServer(host)
     try:
