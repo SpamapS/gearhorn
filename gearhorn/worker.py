@@ -17,6 +17,7 @@ import time
 
 import gear
 
+from gearhorn import util
 from gearhorn.store import sqla
 
 
@@ -71,14 +72,18 @@ class GearhornWorker(gear.Worker):
             if 'topic' not in message or 'client_id' not in message:
                 raise ValueError('must have topic and client_id keys')
         except ValueError as e:
+            self.log.debug(e, exc_info=True)
             job.sendWorkException(bytes(str(e).encode('utf-8')))
             return
+        self.log.debug('Attempting %s %s' % (action, message))
         try:
             action(client_id=message['client_id'],
                    topic=message['topic'])
         except Exception as e:
+            self.log.debug(e, exc_info=True)
             job.sendWorkException(bytes(str(e).encode('utf-8')))
             return
+        self.log.info('Completed %s %s' % (action, message))
         job.sendWorkComplete()
 
     def fanout(self, job):
@@ -95,8 +100,10 @@ class GearhornWorker(gear.Worker):
         errors = []
         for sub in self._store.get_subscribers(message['topic']):
             name = '%s_%s' % (message['topic'], sub)
-            cj = gear.Job(name, arguments=message['payload'],
-                          unique=message.get('unique'))
+            unique = util.to_utf8(message.get('unique'))
+            cj = gear.Job(util.to_utf8(name),
+                          arguments=util.to_utf8(message['payload']),
+                          unique=unique)
             try:
                 self.client.submitJob(cj, background=message.get('background',
                                                                  False))

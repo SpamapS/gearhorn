@@ -14,8 +14,10 @@
 # limitations under the License.
 
 import json
+import threading
 import time
 
+import fixtures
 import gear
 
 from gearhorn.tests import base
@@ -34,7 +36,9 @@ class TestGearhornWorker(base.TestCase):
         self.client.waitForServer()
 
     def test_worker(self):
-        w = worker.GearhornWorker(client_id='test_worker', dsn='sqlite://')
+        tdir = self.useFixture(fixtures.TempDir())
+        dsn = 'sqlite:///%s/test.db' % tdir.path
+        w = worker.GearhornWorker(client_id='test_worker', dsn=dsn)
         w._store.initialize_schema()
         self.addCleanup(w.shutdown)
         w.addServer('localhost', self.server.port)
@@ -59,11 +63,16 @@ class TestGearhornWorker(base.TestCase):
         job = gear.Job(w.fanout_name,
                        json.dumps(fanout_message).encode('utf-8'))
         self.client.submitJob(job)
-        # Now we should fanout message
-        w.work()
-        while not job.complete:
-            time.sleep(0.1)
-        # And finally subw should have it
-        import pdb; pdb.set_trace()
+        # Thread in the background to wait for subw to complete job
+        t = threading.Thread(target=w.work)
+        t.start()
         broadcasted = subw.getJob()
         self.assertEqual('in payload', broadcasted.arguments)
+        broadcasted.sendWorkComplete()
+        # wait for complete to wind through tubes
+        while not job.complete:
+            time.sleep(0.1)
+        self.assertFalse(job.failure)
+        self.assertIsNone(job.exception)
+        self.assertEqual([b'1'], job.data)
+        t.join()
