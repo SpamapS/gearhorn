@@ -23,9 +23,13 @@ class GearhornClient(gear.Client):
     '''An example of a client object to use to subscribe to Gearhorn
     broadcasts.'''
 
-    def submitJob(self, job):
+    def submitJob(self, job, background=False, timeout=30):
         real_name = job.name
         real_arguments = {'topic': real_name, 'payload': job.arguments}
+        if background:
+            real_arguments['background'] = True
         job.name = worker.GearhornWorker.fanout_name
         job.arguments = bytes(json.dumps(real_arguments).encode('utf-8'))
-        return super(GearhornClient, self).submitJob(job)
+        return super(
+            GearhornClient, self).submitJob(job, background=background,
+                                            timeout=timeout)
