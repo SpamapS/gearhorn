@@ -39,10 +39,8 @@ class TestGearhornSubscriber(base.TestCase):
         self.addCleanup(w.shutdown)
         w.addServer('localhost', self.server.port)
         s = subscriber.GearhornSubscriber('test_subscriber')
-        s.worker.addServer('localhost', self.server.port)
-        s.client.addServer('localhost', self.server.port)
-        s.worker.waitForServer()
-        s.client.waitForServer()
+        s.addServer('localhost', self.server.port)
+        s.waitForServer()
         s.subscribe('a_topic')
 
         def _assertJob():

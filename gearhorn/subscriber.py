@@ -38,6 +38,17 @@ class GearhornSubscriber(object):
         return gear.Job(name=name,
                         arguments=bytes(json.dumps(message).encode('utf-8')))
 
+    def addServer(self, host, port=4730, ssl_key=None, ssl_cert=None,
+                  ssl_ca=None):
+        self.worker.addServer(host, port=port, ssl_key=ssl_key,
+                              ssl_cert=ssl_cert, ssl_ca=ssl_ca)
+        self.client.addServer(host, port=port, ssl_key=ssl_key,
+                              ssl_cert=ssl_cert, ssl_ca=ssl_ca)
+
+    def waitForServer(self):
+        self.worker.waitForServer()
+        self.client.waitForServer()
+
     def subscribe(self, topic):
         self.worker.registerFunction(
             get_broadcast_function(self.client_id, topic))
