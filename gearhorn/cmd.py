@@ -17,6 +17,7 @@ import argparse
 import socket
 
 from gearhorn import worker
+from gearhorn.store import sqla
 
 
 def main():
@@ -41,3 +42,11 @@ def main():
         print(str(e))
         return -1
     return 0
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--sqlalchemy-dsn', help='SQLAlchemy DSN for schema '
+                        'to initialize.')
+    opts = parser.parse_args()
+    s = sqla.Store(opts.sqlalchemy_dsn)
+    s.initialize_schema()
