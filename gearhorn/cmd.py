@@ -45,7 +45,7 @@ def main():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--sqlalchemy-dsn', help='SQLAlchemy DSN for schema '
+    parser.add_argument('sqlalchemy_dsn', help='SQLAlchemy DSN for schema '
                         'to initialize.')
     opts = parser.parse_args()
     s = sqla.Store(opts.sqlalchemy_dsn)
