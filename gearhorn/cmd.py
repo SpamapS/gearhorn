@@ -29,7 +29,11 @@ def main():
     w = worker.GearhornWorker(client_id='gearhorn_%s' % socket.gethostname(),
                               dsn=opts.sqlalchemy_dsn)
     for host in opts.host:
-        w.addServer(host)
+        if '/' in host:
+            (host, port) = host.split('/')
+            w.addServer(host, port=port)
+        else:
+            w.addServer(host)
     try:
         while True:
             w.work()
