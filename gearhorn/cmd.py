@@ -43,7 +43,7 @@ def main():
         return -1
     return 0
 
-def main():
+def init_schema():
     parser = argparse.ArgumentParser()
     parser.add_argument('sqlalchemy_dsn', help='SQLAlchemy DSN for schema '
                         'to initialize.')
